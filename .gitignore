@@ -1,0 +1,4 @@
+/gcp-min-sandbox-pulumi
+.pulumi/
+.pulumi-state/
+.pulumi-update-plan.json

@@ -1,0 +1,22 @@
+name: gcp-min-sandbox-pulumi
+runtime: go
+description: Minimal GCP sandbox managed by Pulumi (port of gcp-min-sandbox)
+config:
+  nuon:nuon_id:
+    description: Install id used to namespace resources
+  nuon:project_id:
+    description: GCP project id
+  nuon:region:
+    description: GCP region
+  nuon:enable_nuon_dns:
+    description: When "true" or "1", create Cloud DNS zones
+    default: "false"
+  nuon:public_root_domain:
+    description: Public root domain for Cloud DNS
+    default: ""
+  nuon:internal_root_domain:
+    description: Internal root domain for Cloud DNS
+    default: ""
+  nuon:network:
+    description: Existing VPC network name. Empty creates a new VPC
+    default: ""
