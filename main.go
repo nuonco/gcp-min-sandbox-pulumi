@@ -21,6 +21,7 @@ func main() {
 		enableDNSStr := cfg.Get("enable_nuon_dns")
 		publicRoot := cfg.Get("public_root_domain")
 		internalRoot := cfg.Get("internal_root_domain")
+		network := cfg.Get("network")
 
 		enableDNS := enableDNSStr == "true" || enableDNSStr == "1"
 
@@ -33,13 +34,32 @@ func main() {
 		mergeSanitizedFromCfg(labels, cfg, "tags")
 		mergeSanitizedFromCfg(labels, cfg, "additional_tags")
 
-		net, err := compute.NewNetwork(ctx, "main", &compute.NetworkArgs{
-			Project:               pulumi.String(projectID),
-			Name:                  pulumi.Sprintf("%s-vpc", nuonID),
-			AutoCreateSubnetworks: pulumi.Bool(true),
-		})
-		if err != nil {
-			return fmt.Errorf("create vpc: %w", err)
+		// Use an existing VPC when one is provided (matches the install stack's
+		// network), otherwise create a new one for the install.
+		var networkName, networkSelfLink, networkURL pulumi.StringInput
+		if network != "" {
+			existing, err := compute.LookupNetwork(ctx, &compute.LookupNetworkArgs{
+				Name:    network,
+				Project: &projectID,
+			})
+			if err != nil {
+				return fmt.Errorf("look up existing vpc %q: %w", network, err)
+			}
+			networkName = pulumi.String(existing.Name)
+			networkSelfLink = pulumi.String(existing.SelfLink)
+			networkURL = pulumi.String(existing.SelfLink)
+		} else {
+			net, err := compute.NewNetwork(ctx, "main", &compute.NetworkArgs{
+				Project:               pulumi.String(projectID),
+				Name:                  pulumi.Sprintf("%s-vpc", nuonID),
+				AutoCreateSubnetworks: pulumi.Bool(true),
+			})
+			if err != nil {
+				return fmt.Errorf("create vpc: %w", err)
+			}
+			networkName = net.Name
+			networkSelfLink = net.SelfLink
+			networkURL = net.SelfLink
 		}
 
 		repo, err := artifactregistry.NewRepository(ctx, "main", &artifactregistry.RepositoryArgs{
@@ -90,7 +110,7 @@ func main() {
 				PrivateVisibilityConfig: &dns.ManagedZonePrivateVisibilityConfigArgs{
 					Networks: dns.ManagedZonePrivateVisibilityConfigNetworkArray{
 						&dns.ManagedZonePrivateVisibilityConfigNetworkArgs{
-							NetworkUrl: net.ID().ToStringOutput(),
+							NetworkUrl: networkURL,
 						},
 					},
 				},
@@ -106,8 +126,8 @@ func main() {
 		})
 
 		ctx.Export("vpc", pulumi.Map{
-			"network":           net.Name,
-			"network_self_link": net.SelfLink,
+			"network":           networkName,
+			"network_self_link": networkSelfLink,
 		})
 
 		ctx.Export("gar", pulumi.Map{
