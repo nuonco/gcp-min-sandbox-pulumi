@@ -49,7 +49,7 @@ func main() {
 			networkSelfLink = pulumi.String(existing.SelfLink)
 			networkURL = pulumi.String(existing.SelfLink)
 		} else {
-			net, err := compute.NewNetwork(ctx, "main", &compute.NetworkArgs{
+			net, err := compute.NewNetwork(ctx, "vpc", &compute.NetworkArgs{
 				Project:               pulumi.String(projectID),
 				Name:                  pulumi.Sprintf("%s-vpc", nuonID),
 				AutoCreateSubnetworks: pulumi.Bool(true),
@@ -62,7 +62,7 @@ func main() {
 			networkURL = net.SelfLink
 		}
 
-		repo, err := artifactregistry.NewRepository(ctx, "main", &artifactregistry.RepositoryArgs{
+		repo, err := artifactregistry.NewRepository(ctx, "registry", &artifactregistry.RepositoryArgs{
 			Project:      pulumi.String(projectID),
 			Location:     pulumi.String(region),
 			RepositoryId: pulumi.String(nuonID),
